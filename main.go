@@ -9,13 +9,16 @@ func main() {
 	{
 		"menu": {  
 		"id": "file",  
-		"value": "File",  
+		"value": false,  
 		"popup": {  
 			"menuitem": [  
 				{"value": "New", "onclick": "CreateDoc()"},  
 				{"value": "Open", "onclick": "OpenDoc()"},  
 				{"value": "Save", "onclick": "SaveDoc()"}  
-			]  
+			],
+			"test": {
+				"menuitem": "ini string"
+			}
 		}  
 	}}`
 
@@ -30,8 +33,8 @@ func main() {
 	`
 
 	newData := Mapping([]MapItem{
-		{From: "value", To: "name"},
-		{From: "menuitem", To: "salary"},
+		{From: Item{"value", Boolean}, To: "name"},
+		{From: Item{"menuitem", String}, To: "salary"},
 	}, []byte(source), []byte(target))
 	fmt.Println(string(newData))
 }

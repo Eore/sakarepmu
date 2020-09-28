@@ -2,58 +2,41 @@ package main
 
 import (
 	"encoding/json"
+	"reflect"
 )
 
 type MapItem struct {
-	From string
+	From Item
 	To   string
 }
 
-// type Item struct {
-// 	Field      string
-// 	Type       Type
-// 	Validation string
-// }
+type Item struct {
+	Field string
+	Type  Type
+}
 
-// type Type int
+type Type string
 
-// const (
-// 	String Type = iota
-// 	Number
-// 	Boolean
-// 	Object
-// 		Array
-// )
+const (
+	String  Type = "string"
+	Number  Type = "float64"
+	Boolean Type = "bool"
+	Object  Type = "struct"
+	Array   Type = "slice"
+	Unknown Type = ""
+)
 
 func Mapping(mapItem []MapItem, source, target []byte) []byte {
 	mpSource, _ := jsonToMap(source)
 	mpTarget, _ := jsonToMap(target)
 	for _, val := range mapItem {
-		foundValue := find(mpSource, val.From)
+		foundValue := find(mpSource, val.From.Field, val.From.Type)
 		mpTarget = changeValue(mpTarget, val.To, foundValue)
 	}
-	return mapToJson(mpTarget)
+	return mapToJSON(mpTarget)
 }
 
-// func typeValidation(value interface{}, dataType Type) bool {
-// 	switch value.(type) {
-// 	case string:
-// 		if dataType == String {
-// 			return true
-// 		}
-// 	case int32, float32:
-// 		if dataType == Number {
-// 			return true
-// 		}
-// 	case bool :
-// 		if dataType == Boolean {
-// 			return true
-// 		}
-
-// 	}
-// }
-
-func mapToJson(mapData map[string]interface{}) []byte {
+func mapToJSON(mapData map[string]interface{}) []byte {
 	b, _ := json.MarshalIndent(mapData, "", "  ")
 	return b
 }
@@ -67,14 +50,33 @@ func jsonToMap(jsonData []byte) (map[string]interface{}, error) {
 	return mp, nil
 }
 
-func find(dataMap map[string]interface{}, keyName string) interface{} {
+func checkType(data interface{}) Type {
+	defer recover()
+	dataType := reflect.TypeOf(data).Kind().String()
+	switch dataType {
+	case "string":
+		return String
+	case "float64":
+		return Number
+	case "bool":
+		return Boolean
+	case "struct":
+		return Object
+	case "slice":
+		return Array
+	default:
+		return Unknown
+	}
+}
+
+func find(dataMap map[string]interface{}, keyName string, dataType Type) interface{} {
 	for key, value := range dataMap {
-		if key == keyName {
+		if key == keyName && checkType(value) == dataType {
 			return value
 		}
 		switch value.(type) {
 		case map[string]interface{}:
-			return find(value.(map[string]interface{}), keyName)
+			return find(value.(map[string]interface{}), keyName, dataType)
 		}
 	}
 	return nil
